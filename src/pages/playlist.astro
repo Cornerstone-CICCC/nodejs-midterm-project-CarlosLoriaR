@@ -1,0 +1,167 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+---
+
+<MainLayout title="Playlist">
+  <div style="max-width: 900px; margin: 30px auto; padding: 0 20px;">
+    <a onclick="window.goBack()" style="display: inline-block; margin-bottom: 20px; color: #667eea; text-decoration: none; cursor: pointer; font-weight: 600;">← Back to Playlists</a>
+
+    <div id="error" style="background: #ffebee; color: #c62828; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;"></div>
+
+    <div style="background: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+      <h2 id="playlistName" style="font-size: 32px; color: #333; margin-bottom: 10px;"></h2>
+      <div id="playlistInfo" style="color: #999; font-size: 14px; margin-bottom: 20px;"></div>
+      <button onclick="window.goBack()" style="background: #f0f0f0; color: #333; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600;">Back</button>
+    </div>
+
+    <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
+        <h3 style="font-size: 20px; color: #333;">Songs</h3>
+        <span id="songCount" style="font-size: 14px; color: #999;">0 songs</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 100px auto; gap: 10px; margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; align-items: end;">
+        <div>
+          <label for="songTitle" style="font-weight: 500; color: #333; margin-bottom: 5px; font-size: 13px; display: block;">Song Title</label>
+          <input type="text" id="songTitle" placeholder="Enter title" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+        </div>
+        <div>
+          <label for="songArtist" style="font-weight: 500; color: #333; margin-bottom: 5px; font-size: 13px; display: block;">Artist</label>
+          <input type="text" id="songArtist" placeholder="Enter artist" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+        </div>
+        <div>
+          <label for="songDuration" style="font-weight: 500; color: #333; margin-bottom: 5px; font-size: 13px; display: block;">Duration (sec)</label>
+          <input type="number" id="songDuration" placeholder="0" min="0" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+        </div>
+        <button onclick="window.handleAddSong()" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">+ Add Song</button>
+      </div>
+
+      <div id="songsList"></div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const API_URL = 'http://localhost:3000';
+    let playlistId = null;
+
+    window.loadPlaylist = async function() {
+      try {
+        const res = await fetch(`${API_URL}/playlists/${playlistId}`, {
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to load playlist');
+        const data = await res.json();
+        window.renderPlaylist(data.playlist);
+      } catch (error) {
+        window.showError(error.message);
+      }
+    };
+
+    window.renderPlaylist = function(playlist) {
+      document.getElementById('playlistName').textContent = playlist.name;
+      document.getElementById('playlistInfo').textContent = playlist.description || 'No description';
+      document.getElementById('songCount').textContent = `${playlist.songs.length} song${playlist.songs.length !== 1 ? 's' : ''}`;
+
+      const songsList = document.getElementById('songsList');
+      if (playlist.songs.length === 0) {
+        songsList.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #999;">
+            <p>No songs in this playlist yet</p>
+            <p>Add your first song using the form above</p>
+          </div>
+        `;
+        return;
+      }
+
+      songsList.innerHTML = playlist.songs
+        .map(
+          (song) => `
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #667eea; margin-bottom: 10px;">
+          <div>
+            <h4 style="font-size: 16px; color: #333; margin-bottom: 5px;">${song.title}</h4>
+            <p style="font-size: 13px; color: #999;">${song.artist}</p>
+          </div>
+          <div style="min-width: 80px; text-align: right; color: #666; font-weight: 500;">
+            ${window.formatDuration(song.duration)}
+          </div>
+          <button onclick="window.deleteSong('${song.id}')" style="padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; background: #ffebee; color: #c62828;">Delete</button>
+        </div>
+      `
+        )
+        .join('');
+    };
+
+    window.formatDuration = function(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${String(secs).padStart(2, '0')}`;
+    };
+
+    window.handleAddSong = async function() {
+      const title = document.getElementById('songTitle').value.trim();
+      const artist = document.getElementById('songArtist').value.trim();
+      const duration = parseInt(document.getElementById('songDuration').value) || 0;
+
+      if (!title || !artist) {
+        window.showError('Please fill in all fields');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/playlists/${playlistId}/songs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ title, artist, duration }),
+        });
+
+        if (!res.ok) throw new Error('Failed to add song');
+
+        document.getElementById('songTitle').value = '';
+        document.getElementById('songArtist').value = '';
+        document.getElementById('songDuration').value = '';
+
+        await window.loadPlaylist();
+      } catch (error) {
+        window.showError(error.message);
+      }
+    };
+
+    window.deleteSong = async function(songId) {
+      if (!confirm('Delete this song?')) return;
+
+      try {
+        const res = await fetch(`${API_URL}/playlists/${playlistId}/songs/${songId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (!res.ok) throw new Error('Failed to delete song');
+        await window.loadPlaylist();
+      } catch (error) {
+        window.showError(error.message);
+      }
+    };
+
+    window.goBack = function() {
+      window.location.href = '/dashboard';
+    };
+
+    window.showError = function(message) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => (errorEl.style.display = 'none'), 5000);
+    };
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const params = new URLSearchParams(window.location.search);
+      playlistId = params.get('id');
+      if (!playlistId) {
+        window.location.href = '/dashboard';
+        return;
+      }
+      await window.loadPlaylist();
+    });
+  </script>
+</MainLayout>

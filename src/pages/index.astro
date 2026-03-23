@@ -1,0 +1,203 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+---
+
+<MainLayout title="Login" includeNav={false}>
+  <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+    <div style="background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); width: 100%; max-width: 400px; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center;">
+        <h1 style="font-size: 28px; margin-bottom: 10px;">WUBZ</h1>
+        <p>Manage your playlists</p>
+      </div>
+
+      <div style="padding: 30px;">
+        <div style="display: flex; border-bottom: 1px solid #ddd; margin-bottom: 20px;">
+          <button
+            id="loginTabBtn"
+            class="tab-button"
+            style="flex: 1; padding: 12px; background: none; border: none; cursor: pointer; font-size: 14px; color: #667eea; border-bottom: 2px solid #667eea; font-weight: 600;"
+          >
+            Login
+          </button>
+          <button
+            id="signupTabBtn"
+            class="tab-button"
+            style="flex: 1; padding: 12px; background: none; border: none; cursor: pointer; font-size: 14px; color: #999; border-bottom: 2px solid transparent; font-weight: 600;"
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <div id="loginForm" style="display: block;">
+          <div id="loginError" style="background: #ffebee; color: #c62828; padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; display: none;"></div>
+          <form onsubmit="window.handleLogin(event)">
+            <div style="margin-bottom: 20px;">
+              <label for="loginEmail" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Email</label>
+              <input type="email" id="loginEmail" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="loginPassword" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Password</label>
+              <input type="password" id="loginPassword" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+            </div>
+            <button type="submit" style="width: 100%;">Login</button>
+          </form>
+        </div>
+
+        <div id="signupForm" style="display: none;">
+          <div id="signupError" style="background: #ffebee; color: #c62828; padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; display: none;"></div>
+          <form onsubmit="window.handleSignup(event)">
+            <div style="margin-bottom: 20px;">
+              <label for="signupEmail" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Email</label>
+              <input type="email" id="signupEmail" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="signupUsername" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Username</label>
+              <input type="text" id="signupUsername" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="signupPassword" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Password</label>
+              <input type="password" id="signupPassword" required onchange="window.checkPasswordStrength()" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+              <div style="height: 4px; background: #ddd; border-radius: 2px; margin: 5px 0; overflow: hidden;">
+                <div id="strengthBar" style="height: 100%; width: 0%; background: #f44336; transition: width 0.3s, background-color 0.3s;"></div>
+              </div>
+              <div id="passwordFeedback" style="margin-top: 5px; font-size: 12px; color: #999;"></div>
+            </div>
+            <div style="margin-bottom: 20px;">
+              <label for="signupConfirm" style="display: block; margin-bottom: 8px; color: #333; font-weight: 500;">Confirm Password</label>
+              <input type="password" id="signupConfirm" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;" />
+            </div>
+            <button type="submit" style="width: 100%;">Create Account</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    const API_URL = 'http://localhost:3000';
+
+    window.switchTab = function(tabName) {
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const loginBtn = document.getElementById('loginTabBtn');
+      const signupBtn = document.getElementById('signupTabBtn');
+
+      if (tabName === 'login') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        loginBtn.style.color = '#667eea';
+        loginBtn.style.borderBottomColor = '#667eea';
+        signupBtn.style.color = '#999';
+        signupBtn.style.borderBottomColor = 'transparent';
+      } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        loginBtn.style.color = '#999';
+        loginBtn.style.borderBottomColor = 'transparent';
+        signupBtn.style.color = '#667eea';
+        signupBtn.style.borderBottomColor = '#667eea';
+      }
+    };
+
+    window.handleLogin = async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const errorEl = document.getElementById('loginError');
+
+      try {
+        const res = await fetch(`${API_URL}/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        window.location.href = '/dashboard';
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.style.display = 'block';
+      }
+    };
+
+    window.handleSignup = async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('signupEmail').value;
+      const username = document.getElementById('signupUsername').value;
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirm').value;
+      const errorEl = document.getElementById('signupError');
+
+      if (password !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/users/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, username, password, confirmPassword }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        window.location.href = '/dashboard';
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.style.display = 'block';
+      }
+    };
+
+    window.checkPasswordStrength = function() {
+      const password = document.getElementById('signupPassword').value;
+      const bar = document.getElementById('strengthBar');
+      const feedback = document.getElementById('passwordFeedback');
+
+      if (password.length === 0) {
+        bar.style.width = '0%';
+        feedback.textContent = '';
+        return;
+      }
+
+      let strength = 0;
+      if (password.length >= 8) strength++;
+      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+      if (/\d/.test(password)) strength++;
+      if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+      const percentage = (strength / 4) * 100;
+      bar.style.width = percentage + '%';
+
+      if (strength < 2) {
+        bar.style.backgroundColor = '#f44336';
+        feedback.textContent = 'Weak password';
+      } else if (strength < 3) {
+        bar.style.backgroundColor = '#ff9800';
+        feedback.textContent = 'Fair password';
+      } else {
+        bar.style.backgroundColor = '#4caf50';
+        feedback.textContent = 'Strong password';
+      }
+    };
+
+    // Setup tab button click handlers
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('loginTabBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        window.switchTab('login');
+      });
+
+      document.getElementById('signupTabBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        window.switchTab('signup');
+      });
+    });
+  </script>
+</MainLayout>

@@ -1,0 +1,183 @@
+---
+interface Props {
+  title?: string;
+  includeNav?: boolean;
+}
+
+const { title = 'Music Player', includeNav = true } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} - Music Player</title>
+  <style is:global>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .navbar h1 {
+      font-size: 24px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logout-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid white;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    input,
+    textarea {
+      font-family: inherit;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  {includeNav && (
+    <div class="navbar">
+      <h1>WUBZ</h1>
+      <div class="user-info">
+        <span id="username"></span>
+        <button class="logout-btn" onclick="window.handleLogout()">Logout</button>
+      </div>
+    </div>
+  )}
+  <slot />
+
+  <script is:inline>
+    const API_URL = 'http://localhost:3000';
+
+    window.handleLogout = function() {
+      console.log('Logout button clicked');
+      fetch(`${API_URL}/users/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+        .then(() => {
+          console.log('Logout successful, redirecting...');
+          window.location.href = '/';
+        })
+        .catch((error) => {
+          console.error('Logout error:', error);
+          window.location.href = '/';
+        });
+    };
+
+    window.loadCurrentUser = function() {
+      console.log('Loading current user...');
+      fetch(`${API_URL}/users/me`, {
+        credentials: 'include',
+      })
+        .then((res) => {
+          console.log('/users/me response status:', res.status);
+          if (!res.ok) {
+            console.log('Not authenticated, redirecting to login');
+            if (window.location.pathname !== '/') {
+              window.location.href = '/';
+            }
+            return null;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) {
+            console.log('No user data returned');
+            return;
+          }
+          console.log('User data:', data);
+          const userEl = document.getElementById('username');
+          console.log('Username element found:', !!userEl);
+          if (userEl) {
+            const username = data.user.username;
+            console.log('Setting username to:', username);
+            userEl.textContent = `Welcome, ${username}`;
+          }
+          if (window.location.pathname === '/') {
+            console.log('On login page, redirecting to dashboard');
+            window.location.href = '/dashboard';
+          }
+        })
+        .catch((error) => {
+          console.error('Error loading user:', error);
+        });
+    };
+
+    // Make sure to run after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', window.loadCurrentUser);
+    } else {
+      window.loadCurrentUser();
+    }
+  </script>
+</body>
+</html>
