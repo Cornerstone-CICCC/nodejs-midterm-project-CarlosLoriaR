@@ -74,8 +74,6 @@ import MainLayout from '../layouts/MainLayout.astro';
   </div>
 
   <script is:inline>
-    const API_URL = 'http://localhost:3000';
-
     window.switchTab = function(tabName) {
       const loginForm = document.getElementById('loginForm');
       const signupForm = document.getElementById('signupForm');
@@ -106,7 +104,7 @@ import MainLayout from '../layouts/MainLayout.astro';
       const errorEl = document.getElementById('loginError');
 
       try {
-        const res = await fetch(`${API_URL}/users/login`, {
+        const res = await fetch(`${window.API_URL}/users/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -138,7 +136,7 @@ import MainLayout from '../layouts/MainLayout.astro';
       }
 
       try {
-        const res = await fetch(`${API_URL}/users/register`, {
+        const res = await fetch(`${window.API_URL}/users/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

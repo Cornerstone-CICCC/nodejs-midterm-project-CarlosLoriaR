@@ -78,6 +78,7 @@ export async function login(req: Request, res: Response) {
 export function logout(req: Request, res: Response) {
   req.session.destroy((err) => {
     if (err) {
+      console.error("Session destroy error:", err);
       return res.status(500).json({ error: "Logout failed" });
     }
     res.clearCookie("connect.sid", {

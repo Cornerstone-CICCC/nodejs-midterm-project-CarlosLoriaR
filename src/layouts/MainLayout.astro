@@ -30,21 +30,44 @@ const { title = 'Music Player', includeNav = true } = Astro.props;
     .navbar {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 20px 30px;
+      padding: 16px 20px;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
+    .navbar-wrapper {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
     .navbar h1 {
       font-size: 24px;
+      font-weight: 700;
+      flex-shrink: 0;
     }
 
     .user-info {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 16px;
+      margin-left: auto;
+    }
+
+    #username {
+      font-size: 14px;
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
     }
 
     .logout-btn {
@@ -56,6 +79,8 @@ const { title = 'Music Player', includeNav = true } = Astro.props;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.3s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .logout-btn:hover {
@@ -64,8 +89,8 @@ const { title = 'Music Player', includeNav = true } = Astro.props;
 
     .container {
       max-width: 1200px;
-      margin: 30px auto;
-      padding: 0 20px;
+      margin: 0 auto;
+      padding: 30px 20px;
     }
 
     button {
@@ -100,84 +125,176 @@ const { title = 'Music Player', includeNav = true } = Astro.props;
     .error.show {
       display: block;
     }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 12px 16px;
+      }
+
+      .navbar-wrapper {
+        padding: 0 16px;
+        gap: 12px;
+      }
+
+      .navbar h1 {
+        font-size: 20px;
+      }
+
+      .user-info {
+        gap: 12px;
+      }
+
+      #username {
+        font-size: 12px;
+        max-width: 120px;
+      }
+
+      .logout-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+
+      .container {
+        padding: 20px 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .navbar {
+        padding: 10px 12px;
+      }
+
+      .navbar-wrapper {
+        padding: 0 12px;
+        gap: 8px;
+      }
+
+      .navbar h1 {
+        font-size: 18px;
+      }
+
+      .user-info {
+        gap: 8px;
+      }
+
+      #username {
+        font-size: 11px;
+        max-width: 100px;
+      }
+
+      .logout-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+      }
+
+      .container {
+        padding: 16px 12px;
+      }
+
+      button {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+    }
   </style>
 </head>
 <body>
   {includeNav && (
     <div class="navbar">
-      <h1>WUBZ</h1>
-      <div class="user-info">
-        <span id="username"></span>
-        <button class="logout-btn" onclick="window.handleLogout()">Logout</button>
+      <div class="navbar-wrapper">
+        <h1>WUBZ</h1>
+        <div class="user-info">
+          <span id="username"></span>
+          <button class="logout-btn" onclick="window.handleLogout()">Logout</button>
+        </div>
       </div>
     </div>
   )}
   <slot />
 
   <script is:inline>
-    const API_URL = 'http://localhost:3000';
+    // Declare API_URL globally so it's available to all pages
+    window.API_URL = 'http://localhost:3000';
 
-    window.handleLogout = function() {
-      console.log('Logout button clicked');
-      fetch(`${API_URL}/users/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-        .then(() => {
-          console.log('Logout successful, redirecting...');
-          window.location.href = '/';
-        })
-        .catch((error) => {
-          console.error('Logout error:', error);
-          window.location.href = '/';
+    window.handleLogout = async function() {
+      console.log('Starting logout...');
+      try {
+        const res = await fetch(`${window.API_URL}/users/logout`, {
+          method: 'POST',
+          credentials: 'include',
         });
+
+        console.log('Logout response:', res.status);
+        if (!res.ok) {
+          console.error('Logout failed:', res.status);
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+      } finally {
+        console.log('Redirecting to home page');
+        window.location.href = '/';
+      }
     };
 
-    window.loadCurrentUser = function() {
+    window.loadCurrentUser = async function() {
       console.log('Loading current user...');
-      fetch(`${API_URL}/users/me`, {
-        credentials: 'include',
-      })
-        .then((res) => {
-          console.log('/users/me response status:', res.status);
-          if (!res.ok) {
-            console.log('Not authenticated, redirecting to login');
-            if (window.location.pathname !== '/') {
-              window.location.href = '/';
-            }
-            return null;
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (!data) {
-            console.log('No user data returned');
-            return;
-          }
+      try {
+        const res = await fetch(`${window.API_URL}/users/me`, {
+          credentials: 'include',
+        });
+
+        console.log('User fetch response:', res.status);
+
+        if (res.ok) {
+          const data = await res.json();
           console.log('User data:', data);
+
           const userEl = document.getElementById('username');
-          console.log('Username element found:', !!userEl);
-          if (userEl) {
-            const username = data.user.username;
-            console.log('Setting username to:', username);
-            userEl.textContent = `Welcome, ${username}`;
+          if (userEl && data.user && data.user.username) {
+            console.log('Setting username to:', data.user.username);
+            userEl.textContent = `Welcome, ${data.user.username}`;
+          } else {
+            console.log('Username element or user data not found', { userEl: !!userEl, user: !!data.user });
           }
+
+          // On login page, redirect to dashboard
           if (window.location.pathname === '/') {
             console.log('On login page, redirecting to dashboard');
             window.location.href = '/dashboard';
           }
-        })
-        .catch((error) => {
-          console.error('Error loading user:', error);
-        });
+        } else {
+          console.log('Not authenticated, redirecting to login');
+          // Not authenticated - redirect to login if not already there
+          if (window.location.pathname !== '/') {
+            window.location.href = '/';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+      }
     };
 
-    // Make sure to run after DOM is ready
+    // Load user immediately and also on route changes
+    console.log('MainLayout script loaded');
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', window.loadCurrentUser);
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded event fired');
+        window.loadCurrentUser();
+      });
     } else {
+      console.log('DOM already loaded, calling loadCurrentUser directly');
       window.loadCurrentUser();
     }
+
+    // Also load on page visibility change (for when user returns to tab)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        console.log('Page became visible, reloading user');
+        window.loadCurrentUser();
+      }
+    });
   </script>
 </body>
 </html>

@@ -3,7 +3,8 @@ import MainLayout from '../layouts/MainLayout.astro';
 ---
 
 <MainLayout title="Playlist">
-  <div style="max-width: 900px; margin: 30px auto; padding: 0 20px;">
+  <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+    <div style="margin: 20px 0;">
     <a onclick="window.goBack()" style="display: inline-block; margin-bottom: 20px; color: #667eea; text-decoration: none; cursor: pointer; font-weight: 600;">← Back to Playlists</a>
 
     <div id="error" style="background: #ffebee; color: #c62828; padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;"></div>
@@ -38,15 +39,15 @@ import MainLayout from '../layouts/MainLayout.astro';
 
       <div id="songsList"></div>
     </div>
+    </div>
   </div>
 
   <script is:inline>
-    const API_URL = 'http://localhost:3000';
     let playlistId = null;
 
     window.loadPlaylist = async function() {
       try {
-        const res = await fetch(`${API_URL}/playlists/${playlistId}`, {
+        const res = await fetch(`${window.API_URL}/playlists/${playlistId}`, {
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to load playlist');
@@ -108,7 +109,7 @@ import MainLayout from '../layouts/MainLayout.astro';
       }
 
       try {
-        const res = await fetch(`${API_URL}/playlists/${playlistId}/songs`, {
+        const res = await fetch(`${window.API_URL}/playlists/${playlistId}/songs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -131,7 +132,7 @@ import MainLayout from '../layouts/MainLayout.astro';
       if (!confirm('Delete this song?')) return;
 
       try {
-        const res = await fetch(`${API_URL}/playlists/${playlistId}/songs/${songId}`, {
+        const res = await fetch(`${window.API_URL}/playlists/${playlistId}/songs/${songId}`, {
           method: 'DELETE',
           credentials: 'include',
         });
